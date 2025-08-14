@@ -1,0 +1,176 @@
+#+TITLE: Projekt: Booking (WordPress → Shopify)
+#+AUTHOR: —
+#+DATE: 2025-08-14
+#+OPTIONS: toc:2
+
+* Cel
+- Umożliwić użytkownikowi rezerwację terminu spotkania (MVP na WordPress).
+- Panel admina do definiowania dostępności.
+- Logowanie Google (OAuth).
+- Integracja z Zoom/Google Meet (jako rozszerzenie po MVP).
+- Przygotować architekturę tak, by łatwo przenieść do Shopify.
+
+* Zakres (MVP WordPress)
+- UI: przycisk „Umów spotkanie” + wybór slotu.
+- DB: tabele slotów i rezerwacji.
+- Admin: zarządzanie dostępnością, strefą czasową, długością slotu.
+- Powiadomienia email.
+- Publiczne REST API (pod przyszłe Shopify).
+- (Rozszerzenia po MVP) OAuth Google, Zoom/Meet, płatności (opcjonalnie).
+
+* Kamienie milowe
+** M1: MVP rezerwacji (bez OAuth/spotkań) :milestone:
+   DEADLINE: 2025-09-07
+   - Użytkownik może zarezerwować dostępny slot.
+   - Admin zarządza slotami.
+   - Rezerwacja potwierdzana emailem.
+** M2: Logowanie Google (OAuth) :milestone:
+   DEADLINE: 2025-09-21
+   - Logowanie użytkownika przez Google.
+   - Rezerwacje przypisane do konta.
+** M3: Integracja spotkań (Zoom/Google Meet) :milestone:
+   DEADLINE: 2025-10-05
+   - Po rezerwacji tworzy się spotkanie i link trafia do emaila.
+** M4: Przygotowanie pod Shopify (ekstrakcja API + dokumentacja) :milestone:
+   DEADLINE: 2025-10-12
+
+* Oś czasu (tygodnie)
+- Tydz. 1 :: 2025-08-18 – 2025-08-24
+- Tydz. 2 :: 2025-08-25 – 2025-08-31
+- Tydz. 3 :: 2025-09-01 – 2025-09-07
+- Tydz. 4 :: 2025-09-08 – 2025-09-14
+- Tydz. 5 :: 2025-09-15 – 2025-09-21
+- Tydz. 6 :: 2025-09-22 – 2025-09-28
+- Tydz. 7 :: 2025-09-29 – 2025-10-05
+- Tydz. 8 :: 2025-10-06 – 2025-10-12
+
+* Plan pracy (Sprinty i zadania)
+** Sprint 1 — Fundamenty WP (Tydz. 1–2) :wp:
+SCHEDULED: <2025-08-18>--<2025-08-31>
+:PROPERTIES:
+:GOAL: Szkielet wtyczki, DB, prosty UI + REST
+:END:
+*** TODO [#A] Szkielet wtyczki + aktywator/deaktywator
+:PROPERTIES: :EFFORT: 0:45 :END:
+- Plik główny, nagłówek, autoload, i18n.
+*** TODO [#A] Tabele DB (slots, reservations) + migracje
+:PROPERTIES: :EFFORT: 0:45 :END:
+- ~wp_booking_slots~, ~wp_booking_reservations~, indeksy.
+*** TODO [#A] Admin UI: definicja slotów i reguł dostępności
+:PROPERTIES: :EFFORT: 1:30 :END:
+- Długość slotu, okno rezerwacji, blackout dates, strefa czasowa.
+*** TODO [#B] Public REST API (GET slots, POST reservation)
+:PROPERTIES: :EFFORT: 1:00 :END:
+- Walidacje, konflikt równoległy, rate-limit podstawowy.
+*** TODO [#A] Frontend (shortcode) przycisku + widok kalendarza
+:PROPERTIES: :EFFORT: 1:30 :END:
+- FullCalendar/flatpickr; pobieranie slotów z REST.
+*** TODO [#B] E2E smoke (local): rezerwacja przepływu
+:PROPERTIES: :EFFORT: 0:45 :END:
+
+** Sprint 2 — MVP Rezerwacji + Email (Tydz. 3) :wp:
+SCHEDULED: <2025-09-01>--<2025-09-07>
+:PROPERTIES:
+:GOAL: M1 gotowe
+:END:
+*** TODO [#A] Blokada podwójnych rezerwacji (transakcje/locking)
+:PROPERTIES: :EFFORT: 0:45 :BLOCKED_BY: Public REST API :END:
+*** TODO [#A] Potwierdzenia email (admin + user)
+:PROPERTIES: :EFFORT: 0:30 :END:
+- Szablony, zmienne (data, link odwołania).
+*** TODO [#B] Panel admina: podgląd rezerwacji + eksport CSV
+:PROPERTIES: :EFFORT: 0:45 :END:
+*** TODO [#B] Hardening: nonce, capability checks, sanitization
+:PROPERTIES: :EFFORT: 0:45 :END:
+*** TODO [#A] Kryteria akceptacji M1
+- [ ] Użytkownik widzi tylko dostępne sloty.
+- [ ] Rezerwacja zapisuje się i wysyła email.
+- [ ] Admin może dodać/edytować/usunąć dostępności.
+
+** Sprint 3 — Logowanie Google (Tydz. 4–5) :auth:
+SCHEDULED: <2025-09-08>--<2025-09-21>
+:PROPERTIES:
+:GOAL: M2 gotowe
+:END:
+*** TODO [#A] OAuth Google (client, redirect, token storage)
+:PROPERTIES: :EFFORT: 1:00 :END:
+- Mapowanie na WordPress user, minimal scope (openid, email, profile).
+*** TODO [#A] Przypisanie rezerwacji do konta
+:PROPERTIES: :EFFORT: 0:30 :END:
+- Historia rezerwacji użytkownika (shortcode / konto).
+*** TODO [#B] Anon → Auth merge (po zalogowaniu scalić istniejące koszyki/rez.)
+:PROPERTIES: :EFFORT: 0:30 :END:
+*** TODO [#B] Testy bezpieczeństwa (CSRF/OAuth, replay, logout)
+:PROPERTIES: :EFFORT: 0:30 :END:
+*** TODO [#A] Kryteria akceptacji M2
+- [ ] Logowanie Google działa stabilnie.
+- [ ] Rezerwacje przypięte do identyfikatora usera.
+- [ ] Brak dostępu do cudzych rezerwacji.
+
+** Sprint 4 — Spotkania (Zoom/Google Meet) (Tydz. 6–7) :integrations:
+SCHEDULED: <2025-09-22>--<2025-10-05>
+:PROPERTIES:
+:GOAL: M3 gotowe
+:END:
+*** TODO [#A] Google Calendar API → event z linkiem Meet
+:PROPERTIES: :EFFORT: 1:00 :END:
+- Tworzenie/aktualizacja/usuwanie eventu; goście: admin + user.
+*** TODO [#A] Zoom API → utworzenie meetingu
+:PROPERTIES: :EFFORT: 1:00 :END:
+- OAuth app; host = właściciel; zwrot join_url.
+*** TODO [#B] Wybór preferowanego dostawcy w panelu admina
+:PROPERTIES: :EFFORT: 0:30 :END:
+*** TODO [#B] Szablony email z linkiem spotkania + ICS
+:PROPERTIES: :EFFORT: 0:30 :END:
+*** TODO [#A] Kryteria akceptacji M3
+- [ ] Po rezerwacji powstaje spotkanie (Meet/Zoom).
+- [ ] Link trafia do emaila i do szczegółów rezerwacji.
+- [ ] Odwołanie rezerwacji kasuje/aktualizuje event.
+
+** Sprint 5 — Ekstrakcja API + przygotowanie pod Shopify (Tydz. 8) :shopify-prep:
+SCHEDULED: <2025-10-06>--<2025-10-12>
+:PROPERTIES:
+:GOAL: M4 gotowe
+:END:
+*** TODO [#A] Wydzielenie logiki do modułu/mini-serwisu (REST)
+:PROPERTIES: :EFFORT: 0:45 :END:
+- Ustalić kontrakty endpointów używalne poza WordPressem.
+*** TODO [#A] Dokumentacja API (OpenAPI) + przykłady
+:PROPERTIES: :EFFORT: 0:45 :END:
+*** TODO [#B] Proof-of-Concept embeddable widget (vanilla JS)
+:PROPERTIES: :EFFORT: 0:45 :END:
+- Wstrzyknięcie przycisku i modala w dowolnej stronie/sklepie.
+*** TODO [#B] Lista gapów do Shopify (auth merchant, billing, Polaris)
+:PROPERTIES: :EFFORT: 0:30 :END:
+
+* Architektura (skrót)
+- Warstwa prezentacji: shortcode WP → widget (docelowo reużywalny).
+- Warstwa domenowa: sloty, rezerwacje, walidacje, konflikty.
+- Warstwa integracji: providerzy spotkań (Meet/Zoom) + email.
+- Warstwa API: REST (JSON), gotowe pod Shopify App.
+
+* Ryzyka i mitigacje
+- Kolizje rezerwacji → transakcje + optimistic locking + unikalny indeks.
+- Strefy czasowe → przechowywać w UTC, konwertować w UI.
+- Limity API (Zoom/Google) → retry + backoff + logi.
+- Bezpieczeństwo OAuth → krótkie tokeny, refresh, bezpieczne storage.
+- GDPR/RODO → minimalizacja danych, polityka retencji, zgody email.
+
+* Metryki sukcesu (MVP)
+- Średni czas od wejścia do rezerwacji < 90 s.
+- Współczynnik porzuceń kalendarza < 20%.
+- SLA tworzenia spotkania (p95) < 3 s.
+- <1% nieudanych rezerwacji z powodu konfliktu.
+
+* Backlog (po MVP / opcjonalne)
+- Płatności za rezerwacje (Stripe).
+- Wielu prowadzących / zasobów (resource calendar).
+- Przeciągnij-upuść w adminie (zaaw. FullCalendar).
+- Webhooki (status rezerwacji → zewnętrzne systemy).
+- A/B testy UI kalendarza.
+
+* Przygotowanie pod Shopify (kolejne etapy — skrót)
+1. Stworzyć app (Node.js) z OAuth Shopify + App Bridge + Polaris.
+2. Użyć tego samego REST API (z modułu) do slotów/rezerwacji.
+3. Osadzić widget (iframe/embedded app) w sklepie.
+4. Billing (Subscription/Usage), dopiąć publikację w App Store.
