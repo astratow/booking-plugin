@@ -27,10 +27,9 @@ function bp_deactivate() {
 
 // Shortcode
 add_shortcode('booking_button', function() {
-    // return '<p>Hello World</p>';
     $slots_url = esc_url( rest_url('booking/v1/slots') );
     ob_start(); ?>
-    <button id="bp-book-btn">Umów spotkanie</button>
+    <button id="bp-book-btn">Book Meeting</button>
     <div id="bp-slots"></div>
     <script>
         window.bpSlotsUrl = "<?php echo $slots_url; ?>";
